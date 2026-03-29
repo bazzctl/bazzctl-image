@@ -65,7 +65,7 @@ jobs:
           image: ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.DEFAULT_TAG }}
           chown: "1001:127"
           types: qcow2
-          additional-args: --use-librepo=True
+          additional-args: --use-librepo=True --rootfs ext4
 
       - name: Create GitHub Release
         env:
