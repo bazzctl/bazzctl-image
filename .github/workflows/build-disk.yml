@@ -84,8 +84,13 @@ jobs:
             echo "No qcow2 found in output"
             exit 1
           fi
-          cp "${QCOW2}" /tmp/disk.qcow2
-          gh release create "${TAG}" /tmp/disk.qcow2 \
+          # Compress (GitHub Releases has 2GB limit, raw qcow2 is ~5GB+)
+          echo "Compressing qcow2..."
+          xz -T0 -3 "${QCOW2}"
+          XZ_FILE="${QCOW2}.xz"
+          ls -lh "${XZ_FILE}"
+          cp "${XZ_FILE}" /tmp/disk.qcow2.xz
+          gh release create "${TAG}" /tmp/disk.qcow2.xz \
             --title "Bazzite base image ${DATE}" \
-            --notes "Pre-built Bazzite qcow2 for bazzctl." \
+            --notes "Pre-built Bazzite qcow2 for bazzctl. Decompress with: xz -d disk.qcow2.xz" \
             --latest
