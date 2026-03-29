@@ -84,7 +84,7 @@ jobs:
           COPY disk.qcow2 /disk.qcow2
           DOCKERFILE
           cp "${QCOW2}" /tmp/disk.qcow2
-          echo "${{ secrets.GITHUB_TOKEN }}" | podman login ghcr.io -u ${{ github.actor }} --password-stdin
-          podman build -t "${IMAGE_REGISTRY}/${IMAGE_NAME}:disk" -f /tmp/Containerfile.disk /tmp
-          podman push "${IMAGE_REGISTRY}/${IMAGE_NAME}:disk"
+          echo "${{ secrets.GITHUB_TOKEN }}" | sudo podman login ghcr.io -u ${{ github.actor }} --password-stdin
+          sudo podman build -t "${IMAGE_REGISTRY}/${IMAGE_NAME}:disk" -f /tmp/Containerfile.disk /tmp
+          sudo podman push "${IMAGE_REGISTRY}/${IMAGE_NAME}:disk"
           echo "Pushed ${IMAGE_REGISTRY}/${IMAGE_NAME}:disk"
