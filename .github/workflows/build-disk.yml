@@ -35,7 +35,7 @@ jobs:
     if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     permissions:
       contents: write
-      packages: read
+      packages: write
       id-token: write
 
     steps:
