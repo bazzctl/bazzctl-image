@@ -67,8 +67,9 @@ jobs:
           types: qcow2
           additional-args: --use-librepo=True --rootfs ext4
 
-      - name: Push qcow2 to GHCR as OCI artifact
+      - name: Upload qcow2 to GitHub Release
         env:
+          GH_TOKEN: ${{ github.token }}
           OUTPUT_DIR: ${{ steps.build.outputs.output-directory }}
         run: |
           QCOW2=$(find "${OUTPUT_DIR}" -name '*.qcow2' | head -1)
@@ -77,14 +78,16 @@ jobs:
             exit 1
           fi
           ls -lh "${QCOW2}"
-          # Wrap qcow2 in a minimal container image and push to GHCR
-          # This avoids GitHub Releases' 2GB limit (GHCR has no per-layer limit)
-          cat > /tmp/Containerfile.disk <<'DOCKERFILE'
-          FROM scratch
-          COPY disk.qcow2 /disk.qcow2
-          DOCKERFILE
-          cp "${QCOW2}" /tmp/disk.qcow2
-          echo "${{ secrets.GITHUB_TOKEN }}" | sudo podman login ghcr.io -u ${{ github.actor }} --password-stdin
-          sudo podman build -t "${IMAGE_REGISTRY}/${IMAGE_NAME}:disk" -f /tmp/Containerfile.disk /tmp
-          sudo podman push "${IMAGE_REGISTRY}/${IMAGE_NAME}:disk"
-          echo "Pushed ${IMAGE_REGISTRY}/${IMAGE_NAME}:disk"
+          DATE=$(date +%Y%m%d)
+          TAG="v${DATE}"
+          # Split into <2GB chunks (GitHub Releases limit)
+          split -b 1900m "${QCOW2}" /tmp/disk.qcow2.part
+          ls -lh /tmp/disk.qcow2.part*
+          # Delete existing release
+          gh release delete "${TAG}" --yes 2>/dev/null || true
+          git push origin ":refs/tags/${TAG}" 2>/dev/null || true
+          # Create release with all parts
+          gh release create "${TAG}" /tmp/disk.qcow2.part* \
+            --title "Bazzite base image ${DATE}" \
+            --notes "Pre-built Bazzite qcow2 for bazzctl (split into parts). Reassemble with: cat disk.qcow2.part* > disk.qcow2" \
+            --latest
