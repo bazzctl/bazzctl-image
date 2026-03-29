@@ -67,6 +67,9 @@ jobs:
           types: qcow2
           additional-args: --use-librepo=True --rootfs ext4
 
+      - name: Install qemu-img
+        run: sudo apt-get install -y qemu-utils
+
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -84,10 +87,14 @@ jobs:
             echo "No qcow2 found in output"
             exit 1
           fi
-          # Compress to /tmp (GitHub Releases has 2GB limit)
-          echo "Compressing qcow2..."
+          # Compact qcow2 (removes sparse gaps) then xz compress
+          # Raw output is ~5.7GB; compacted+compressed should be ~1-1.5GB
+          echo "Compacting qcow2..."
           ls -lh "${QCOW2}"
-          xz -T0 -3 -c "${QCOW2}" > /tmp/disk.qcow2.xz
+          qemu-img convert -O qcow2 -c "${QCOW2}" /tmp/disk.qcow2
+          ls -lh /tmp/disk.qcow2
+          echo "Compressing with xz..."
+          xz -T0 -3 /tmp/disk.qcow2
           ls -lh /tmp/disk.qcow2.xz
           gh release create "${TAG}" /tmp/disk.qcow2.xz \
             --title "Bazzite base image ${DATE}" \
